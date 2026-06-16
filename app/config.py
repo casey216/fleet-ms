@@ -4,7 +4,8 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://insightia:insightia+++@localhost:5432/fleet_db"
+    #DATABASE_URL: str = "postgresql+asyncpg://insightia:insightia+++@localhost:5432/fleet_db"
+    DATABASE_URL: str = "postgresql+asyncpg://neondb_owner:npg_6zIMEboLXg8A@ep-young-bread-ai02lp21-pooler.c-4.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
     DATABASE_URL_SYNC: str = "postgresql://insightia:insightia+++@localhost:5432/fleet_db"
 
     # Security
