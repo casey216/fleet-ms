@@ -1,0 +1,53 @@
+{% set role_colors = {
+'admin': 'badge-error',
+'fleet_manager': 'badge-warning',
+'driver': 'badge-info',
+'viewer': 'badge-ghost',
+} %}
+
+{% for u in users %}
+<tr>
+    <td>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div class="user-avatar" style="width:34px;height:34px;font-size:13px;flex-shrink:0;">
+                {{ u.full_name[0].upper() }}
+            </div>
+            <div>
+                <a href="/drivers/{{ u.id }}" style="color:var(--text-primary);text-decoration:none;font-weight:500;">
+                    {{ u.full_name }}
+                </a>
+                <div style="font-size:12px;color:var(--text-muted);">@{{ u.username }}</div>
+            </div>
+        </div>
+    </td>
+    <td style="color:var(--text-secondary);">{{ u.email }}</td>
+    <td>
+        <span class="badge {{ role_colors.get(u.role.value, 'badge-ghost') }}">
+            {{ u.role.value.replace('_',' ').title() }}
+        </span>
+    </td>
+    <td style="color:var(--text-secondary);">{{ u.department or '—' }}</td>
+    <td>
+        {% if u.is_active %}
+        <span class="badge badge-success"><i class="fa-solid fa-circle" style="font-size:7px;"></i> Active</span>
+        {% else %}
+        <span class="badge badge-ghost"><i class="fa-solid fa-circle" style="font-size:7px;"></i> Inactive</span>
+        {% endif %}
+    </td>
+    <td style="color:var(--text-secondary);font-size:12.5px;">
+        {{ u.last_login.strftime('%b %d, %Y') if u.last_login else 'Never' }}
+    </td>
+    <td>
+        <div style="display:flex;gap:6px;">
+            <a href="/drivers/{{ u.id }}" class="btn btn-sm btn-secondary btn-icon" data-tooltip="View">
+                <i class="fa-solid fa-eye"></i>
+            </a>
+            {% if can_write %}
+            <a href="/drivers/{{ u.id }}/edit" class="btn btn-sm btn-secondary btn-icon" data-tooltip="Edit">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}

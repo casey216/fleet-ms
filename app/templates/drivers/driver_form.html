@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if edit_user else 'New User' }} — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/drivers">Drivers & Users</a>
+    <span class="sep">/</span>
+    <span class="current">{{ 'Edit ' + edit_user.full_name if edit_user else 'New User' }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit User' if edit_user else 'Add New User' }}</h1>
+        <p class="page-subtitle">{{ 'Update user information and permissions' if edit_user else 'Create a new user
+            account' }}</p>
+    </div>
+</div>
+
+{% if error %}
+<div class="flash flash-error" style="margin:0 0 20px;">
+    <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+</div>
+{% endif %}
+
+<div class="card" style="max-width:640px;">
+    <form method="post" action="{{ '/drivers/' + edit_user.id + '/edit' if edit_user else '/drivers/new' }}">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-user" style="margin-right:8px;color:var(--accent)"></i>Personal Information
+        </h3>
+
+        <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" name="full_name" class="form-input" placeholder="Jane Smith"
+                value="{{ edit_user.full_name if edit_user else '' }}" required>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Email *</label>
+                <input type="email" name="email" class="form-input" placeholder="jane@company.com"
+                    value="{{ edit_user.email if edit_user else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Username *</label>
+                <input type="text" name="username" class="form-input" placeholder="janesmith"
+                    value="{{ edit_user.username if edit_user else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="tel" name="phone" class="form-input" placeholder="+1 555 000 0000"
+                    value="{{ edit_user.phone or '' if edit_user else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Department</label>
+                <input type="text" name="department" class="form-input" placeholder="e.g. Operations"
+                    value="{{ edit_user.department or '' if edit_user else '' }}">
+            </div>
+        </div>
+
+        {% if not is_own_profile %}
+        <hr style="margin: 20px 0;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;">
+            <i class="fa-solid fa-shield-halved" style="margin-right:8px;color:var(--accent)"></i>Role & Access
+        </h3>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select name="role" class="form-select">
+                    {% for r in roles %}
+                    <option value="{{ r }}" {% if edit_user and edit_user.role.value==r %}selected{% elif not edit_user
+                        and r=='driver' %}selected{% endif %}>
+                        {{ r.replace('_',' ').title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="form-hint">Roles control what the user can see and do in the system</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Account Status</label>
+                <select name="is_active" class="form-select">
+                    <option value="true" {% if not edit_user or edit_user.is_active %}selected{% endif %}>Active
+                    </option>
+                    <option value="false" {% if edit_user and not edit_user.is_active %}selected{% endif %}>Inactive
+                    </option>
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
+        <hr style="margin: 20px 0;">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;">
+            <i class="fa-solid fa-lock" style="margin-right:8px;color:var(--accent)"></i>Password
+        </h3>
+
+        {% if edit_user %}
+        <div class="form-group">
+            <label class="form-label">New Password <span style="color:var(--text-muted);font-weight:400;">(leave blank
+                    to keep current)</span></label>
+            <input type="password" name="new_password" class="form-input" placeholder="••••••••"
+                autocomplete="new-password">
+        </div>
+        {% else %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Password *</label>
+                <input type="password" name="password" class="form-input" placeholder="Min. 8 characters" required
+                    autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm Password *</label>
+                <input type="password" name="confirm_password" class="form-input" placeholder="Repeat password"
+                    required>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;">
+            <a href="{{ '/drivers/' + edit_user.id if edit_user else '/drivers' }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-{{ 'floppy-disk' if edit_user else 'user-plus' }}"></i>
+                {{ 'Save Changes' if edit_user else 'Create User' }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Role permissions reference -->
+<div class="card" style="max-width:640px;margin-top:20px;">
+    <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-circle-info" style="margin-right:8px;color:var(--info)"></i>Role
+            Permissions Reference</div>
+    </div>
+    <table style="font-size:12.5px;">
+        <thead>
+            <tr>
+                <th>Permission</th>
+                <th style="color:#f87171;">Admin</th>
+                <th style="color:#fbbf24;">Fleet Manager</th>
+                <th style="color:#60a5fa;">Driver</th>
+                <th style="color:var(--text-muted)">Viewer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for perm in [
+            ('Manage Users', True, False, False, False),
+            ('Add/Edit Vehicles', True, True, False, False),
+            ('Delete Vehicles', True, False, False, False),
+            ('Log Fuel', True, True, True, False),
+            ('Schedule Maintenance', True, True, False, False),
+            ('Manage Contracts', True, True, False, False),
+            ('Manage Insurance', True, True, False, False),
+            ('View Alerts', True, True, True, True),
+            ('View Reports', True, True, False, True),
+            ('App Settings', True, True, False, False),
+            ] %}
+            <tr>
+                <td style="color:var(--text-secondary);">{{ perm[0] }}</td>
+                {% for allowed in perm[1:] %}
+                <td>
+                    {% if allowed %}
+                    <i class="fa-solid fa-check" style="color:var(--success)"></i>
+                    {% else %}
+                    <i class="fa-solid fa-xmark" style="color:var(--text-muted)"></i>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

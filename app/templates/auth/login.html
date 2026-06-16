@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — {{ app_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+    <div class="auth-page">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <div class="auth-logo-icon"><i class="fa-solid fa-truck-fast"></i></div>
+                <div class="auth-logo-text">{{ app_name }}</div>
+            </div>
+
+            <h1 class="auth-title">Welcome back</h1>
+            <p class="auth-sub">Sign in to manage your fleet</p>
+
+            {% if error %}
+            <div class="flash flash-error" style="margin: 0 0 20px;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/auth/login">
+                <div class="form-group">
+                    <label class="form-label">Email address</label>
+                    <input type="email" name="email" class="form-input" placeholder="you@company.com"
+                        value="{{ email or '' }}" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-input" placeholder="••••••••" required
+                        autocomplete="current-password">
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="remember" value="true">
+                        Keep me signed in for 30 days
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary"
+                    style="width: 100%; justify-content: center; padding: 10px 16px; font-size: 14px;">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Sign in
+                </button>
+            </form>
+
+            <p style="margin-top: 24px; text-align: center; font-size: 13px; color: var(--text-secondary);">
+                No account?
+                <a href="/auth/register" style="color: var(--accent); text-decoration: none; font-weight: 500;">Create
+                    one</a>
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ target_user.full_name }} — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/drivers">Drivers & Users</a>
+    <span class="sep">/</span>
+    <span class="current">{{ target_user.full_name }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set role_colors = {
+'admin': 'badge-error',
+'fleet_manager': 'badge-warning',
+'driver': 'badge-info',
+'viewer': 'badge-ghost',
+} %}
+
+<div class="page-header">
+    <div style="display:flex;align-items:center;gap:16px;">
+        <div class="user-avatar" style="width:56px;height:56px;font-size:22px;">
+            {{ target_user.full_name[0].upper() }}
+        </div>
+        <div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <h1 class="page-title">{{ target_user.full_name }}</h1>
+                <span class="badge {{ role_colors.get(target_user.role.value, 'badge-ghost') }}">
+                    {{ target_user.role.value.replace('_',' ').title() }}
+                </span>
+                {% if not target_user.is_active %}
+                <span class="badge badge-ghost">Inactive</span>
+                {% endif %}
+            </div>
+            <p class="page-subtitle">@{{ target_user.username }} · {{ target_user.email }}</p>
+        </div>
+    </div>
+    {% if can_write %}
+    <a href="/drivers/{{ target_user.id }}/edit" class="btn btn-primary">
+        <i class="fa-solid fa-pen"></i> Edit
+    </a>
+    {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Info card -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-id-card"
+                    style="margin-right:8px;color:var(--accent)"></i>Profile</div>
+        </div>
+        <div class="info-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="info-item">
+                <div class="info-label">Full Name</div>
+                <div class="info-value">{{ target_user.full_name }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Username</div>
+                <div class="info-value mono">@{{ target_user.username }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ target_user.email }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Phone</div>
+                <div class="info-value">{{ target_user.phone or '—' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Department</div>
+                <div class="info-value">{{ target_user.department or '—' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Timezone</div>
+                <div class="info-value">{{ target_user.timezone }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Member Since</div>
+                <div class="info-value">{{ target_user.created_at.strftime('%b %d, %Y') if target_user.created_at else
+                    '—' }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Last Login</div>
+                <div class="info-value">{{ target_user.last_login.strftime('%b %d, %Y %H:%M') if target_user.last_login
+                    else 'Never' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assigned vehicles -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-car" style="margin-right:8px;color:var(--accent)"></i>Assigned
+                Vehicles</div>
+        </div>
+        {% if vehicles %}
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            {% for v in vehicles %}
+            <a href="/vehicles/{{ v.id }}"
+                style="text-decoration:none;display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg-hover);border-radius:var(--radius-sm);">
+                <div
+                    style="width:36px;height:36px;background:var(--accent-subtle);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--accent);">
+                    <i class="fa-solid fa-car"></i>
+                </div>
+                <div>
+                    <div class="mono" style="font-weight:600;color:var(--accent);">{{ v.license_plate }}</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">{{ v.year }} {{ v.make }} {{ v.model }}
+                    </div>
+                </div>
+                <span
+                    class="badge {% if v.status.value == 'active' %}badge-success{% elif v.status.value == 'in_maintenance' %}badge-warning{% else %}badge-ghost{% endif %}"
+                    style="margin-left:auto;">
+                    {{ v.status.value.replace('_',' ').title() }}
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-car"></i>
+            <h3>No vehicles assigned</h3>
+            <p>This user has no vehicles assigned yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

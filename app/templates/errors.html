@@ -1,0 +1,49 @@
+<div id="form-errors" role="alert" onanimationend="this.style.display='none'" style="position:relative;overflow:hidden;margin-bottom:16px;
+         display:inline-block;min-width:260px;max-width:100%;
+         padding:10px 36px 10px 14px;border-radius:6px;
+         border-left:3px solid #E24B4A;background:#FCEBEB;
+         box-sizing:border-box;
+         animation:flq-fadeout 6s ease forwards;">
+
+    <p style="font-size:13px;font-weight:600;color:#A32D2D;margin:0 0 6px;">
+        Please fix the following errors:
+    </p>
+    <ul style="margin:0;padding-left:18px;">
+        {% for error in errors %}
+        <li style="font-size:13px;color:#A32D2D;margin-bottom:2px;">{{ error }}</li>
+        {% endfor %}
+    </ul>
+
+    <button type="button" aria-label="Dismiss" onclick="this.closest('#form-errors').style.display='none'" style="position:absolute;top:8px;right:8px;background:none;
+           border:none;cursor:pointer;color:#A32D2D;font-size:16px;
+           line-height:1;padding:2px 4px;border-radius:4px;opacity:.7;" onmouseover="this.style.opacity=1"
+        onmouseout="this.style.opacity=.7">✕</button>
+
+    <div style="position:absolute;bottom:0;left:0;height:3px;
+              width:100%;background:#E24B4A;opacity:.5;
+              animation:flq-shrink 6s linear forwards;"></div>
+
+    <style>
+        @keyframes flq-shrink {
+            from {
+                width: 100%
+            }
+
+            to {
+                width: 0
+            }
+        }
+
+        @keyframes flq-fadeout {
+
+            0%,
+            80% {
+                opacity: 1
+            }
+
+            100% {
+                opacity: 0
+            }
+        }
+    </style>
+</div>

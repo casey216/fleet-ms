@@ -1,0 +1,63 @@
+{% set mstatus_badge = {
+'scheduled': 'badge-warning',
+'in_progress': 'badge-info',
+'completed': 'badge-success',
+'cancelled': 'badge-ghost',
+} %}
+
+{% for record, vehicle in records %}
+<tr>
+    <td>
+        <a href="/vehicles/{{ vehicle.id }}" class="mono"
+            style="color:var(--accent);text-decoration:none;font-weight:600;">
+            {{ vehicle.license_plate }}
+        </a>
+        <div style="font-size:12px;color:var(--text-muted);">{{ vehicle.make }} {{ vehicle.model }}</div>
+    </td>
+    <td>
+        <div style="font-weight:500;">{{ record.title }}</div>
+        {% if record.description %}
+        <div
+            style="font-size:12px;color:var(--text-muted);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ record.description }}</div>
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge badge-ghost">{{ record.maintenance_type.value.replace('_',' ').title() }}</span>
+    </td>
+    <td>
+        {% set days = record.scheduled_date | days_until %}
+        <div style="color:var(--text-secondary);">{{ record.scheduled_date | fmt_date }}</div>
+        {% if record.status.value in ['scheduled', 'in_progress'] %}
+        {% if days is not none and days < 0 %} <div style="font-size:11px;color:var(--danger);">{{ days | abs }} day{{
+            's' if days | abs != 1 }} overdue</div>
+            {% elif days is not none and days <= 3 %} <div style="font-size:11px;color:var(--warning);">{{ days }} day{{
+                's' if days != 1 }} left</div>
+                {% endif %}
+                {% endif %}
+    </td>
+    <td>
+        <span class="badge {{ mstatus_badge.get(record.status.value, 'badge-ghost') }}">
+            {{ record.status.value.replace('_',' ').title() }}
+        </span>
+    </td>
+    <td style="font-weight:600;">{{ record.cost | currency }}</td>
+    <td style="color:var(--text-secondary);">{{ record.vendor or '—' }}</td>
+    <td>
+        <div style="display:flex;gap:6px;">
+            {% if can_write %}
+            <a href="/maintenance/{{ record.id }}/edit" class="btn btn-sm btn-secondary btn-icon" data-tooltip="Edit">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+            {% if record.status.value in ['scheduled', 'in_progress'] %}
+            <form method="post" action="/maintenance/{{ record.id }}/complete" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-success btn-icon" data-tooltip="Mark Complete">
+                    <i class="fa-solid fa-check"></i>
+                </button>
+            </form>
+            {% endif %}
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}

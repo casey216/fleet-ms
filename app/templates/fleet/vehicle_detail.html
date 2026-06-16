@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% block title %}{{ vehicle.license_plate }} — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+  <a href="/vehicles">Vehicles</a>
+  <span class="sep">/</span>
+  <span class="current">{{ vehicle.license_plate }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set status_badges = {
+'active': 'badge-success',
+'in_maintenance': 'badge-warning',
+'out_of_service': 'badge-danger',
+'reserved': 'badge-info',
+} %}
+
+<div class="page-header">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div
+      style="width:52px;height:52px;background:var(--accent-subtle);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--accent);">
+      <i class="fa-solid fa-car"></i>
+    </div>
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h1 class="page-title mono">{{ vehicle.license_plate }}</h1>
+        <span class="badge {{ status_badges.get(vehicle.status.value, 'badge-ghost') }}">
+          {{ vehicle.status.value.replace('_',' ').title() }}
+        </span>
+      </div>
+      <p class="page-subtitle">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}{% if vehicle.color %} · {{
+        vehicle.color }}{% endif %}</p>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <a href="/fuel/new?vehicle_id={{ vehicle.id }}" class="btn btn-secondary"><i class="fa-solid fa-gas-pump"></i> Log
+      Fuel</a>
+    <a href="/maintenance/new?vehicle_id={{ vehicle.id }}" class="btn btn-secondary"><i class="fa-solid fa-wrench"></i>
+      Schedule Service</a>
+    <a href="/odometer/new?vehicle_id={{ vehicle.id }}" class="btn btn-secondary"><i class="fa-solid fa-gauge"></i> Log
+      Odometer</a>
+    {% if can_write %}
+    <a href="/vehicles/{{ vehicle.id }}/edit" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Edit</a>
+    {% endif %}
+    {% if can_delete %}
+    <form method="post" action="/vehicles/{{ vehicle.id }}/delete" id="del-vehicle">
+      <button type="button" class="btn btn-danger"
+        onclick="confirmDelete('del-vehicle','Delete this vehicle and all its records?')">
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Info grid -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="info-label">Make / Model</div>
+      <div class="info-value">{{ vehicle.make }} {{ vehicle.model }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Year</div>
+      <div class="info-value">{{ vehicle.year }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Fuel Type</div>
+      <div class="info-value">{{ vehicle.fuel_type.value.title() }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Odometer</div>
+      <div class="info-value mono">{{ vehicle.odometer | km }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Seats</div>
+      <div class="info-value">{{ vehicle.seats }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">VIN</div>
+      <div class="info-value mono" style="font-size:12px;">{{ vehicle.vin or '—' }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Assigned Driver</div>
+      <div class="info-value">
+        {% if driver %}
+        <a href="/drivers/{{ driver.id }}" style="color:var(--accent);text-decoration:none;">{{ driver.full_name }}</a>
+        {% else %}
+        <span style="color:var(--text-muted)">Unassigned</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Total Fuel Cost</div>
+      <div class="info-value" style="color:var(--info);">{{ total_fuel_cost | currency }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Total Maintenance Cost</div>
+      <div class="info-value" style="color:var(--warning);">{{ total_maintenance_cost | currency }}</div>
+    </div>
+  </div>
+  {% if vehicle.notes %}
+  <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+    <div class="info-label" style="margin-bottom:6px;">Notes</div>
+    <p style="color:var(--text-secondary);font-size:13.5px;">{{ vehicle.notes }}</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Tabs section -->
+<div class="tabs">
+  <a href="#fuel" class="tab active" onclick="showTab('fuel',this)">Fuel History</a>
+  <a href="#maintenance" class="tab" onclick="showTab('maintenance',this)">Maintenance</a>
+  <a href="#odometer" class="tab" onclick="showTab('odometer',this)">Odometer</a>
+  <a href="#contracts" class="tab" onclick="showTab('contracts',this)">Contracts</a>
+  <a href="#insurance" class="tab" onclick="showTab('insurance',this)">Insurance</a>
+</div>
+
+<!-- Fuel logs tab -->
+<div id="tab-fuel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <h3 style="font-size:14px;font-weight:600;">Fuel History</h3>
+    <a href="/fuel/new?vehicle_id={{ vehicle.id }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i> Log
+      Fuel</a>
+  </div>
+  {% if fuel_logs %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Liters</th>
+          <th>$/L</th>
+          <th>Total</th>
+          <th>Odometer</th>
+          <th>Station</th>
+          <th>Full Tank</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in fuel_logs %}
+        <tr>
+          <td>{{ log.date | fmt_date }}</td>
+          <td>{{ "%.1f"|format(log.liters) }} L</td>
+          <td style="color:var(--text-secondary);">${{ "%.3f"|format(log.cost_per_liter) }}</td>
+          <td style="font-weight:600;">{{ log.total_cost | currency }}</td>
+          <td class="mono" style="color:var(--text-secondary);">{{ log.odometer | km }}</td>
+          <td style="color:var(--text-secondary);">{{ log.station or '—' }}</td>
+          <td>
+            {% if log.full_tank %}
+            <span class="badge badge-success"><i class="fa-solid fa-check"></i> Yes</span>
+            {% else %}
+            <span class="badge badge-ghost">Partial</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <i class="fa-solid fa-gas-pump"></i>
+    <h3>No fuel logs</h3>
+    <p><a href="/fuel/new?vehicle_id={{ vehicle.id }}" style="color:var(--accent)">Log the first fill-up</a></p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Maintenance tab -->
+<div id="tab-maintenance" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <h3 style="font-size:14px;font-weight:600;">Maintenance Records</h3>
+    <a href="/maintenance/new?vehicle_id={{ vehicle.id }}" class="btn btn-sm btn-primary"><i
+        class="fa-solid fa-plus"></i> Schedule Service</a>
+  </div>
+  {% if maintenance %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Scheduled</th>
+          <th>Status</th>
+          <th>Cost</th>
+          <th>Vendor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in maintenance %}
+        {% set mstatus = {
+        'scheduled': 'badge-warning',
+        'in_progress': 'badge-info',
+        'completed': 'badge-success',
+        'cancelled': 'badge-ghost',
+        } %}
+        <tr>
+          <td style="font-weight:500;">{{ rec.title }}</td>
+          <td><span class="badge badge-ghost">{{ rec.maintenance_type.value.replace('_',' ').title() }}</span></td>
+          <td style="color:var(--text-secondary);">{{ rec.scheduled_date | fmt_date }}</td>
+          <td><span class="badge {{ mstatus.get(rec.status.value, 'badge-ghost') }}">{{ rec.status.value.replace('_','
+              ').title() }}</span></td>
+          <td style="font-weight:600;">{{ rec.cost | currency }}</td>
+          <td style="color:var(--text-secondary);">{{ rec.vendor or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <i class="fa-solid fa-wrench"></i>
+    <h3>No maintenance records</h3>
+    <p><a href="/maintenance/new?vehicle_id={{ vehicle.id }}" style="color:var(--accent)">Schedule a service</a></p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Odometer tab -->
+<div id="tab-odometer" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <h3 style="font-size:14px;font-weight:600;">Odometer Readings</h3>
+    <a href="/odometer/new?vehicle_id={{ vehicle.id }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i>
+      Log Reading</a>
+  </div>
+  {% if odometer_logs %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Reading</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in odometer_logs %}
+        <tr>
+          <td style="color:var(--text-secondary);">{{ log.date | fmt_date }}</td>
+          <td class="mono" style="font-weight:600;">{{ "{:,}".format(log.value) }} km</td>
+          <td style="color:var(--text-secondary);">{{ log.notes or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <i class="fa-solid fa-gauge"></i>
+    <h3>No odometer readings</h3>
+    <p><a href="/odometer/new?vehicle_id={{ vehicle.id }}" style="color:var(--accent)">Log the first reading</a></p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Contracts tab -->
+<div id="tab-contracts" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <h3 style="font-size:14px;font-weight:600;">Contracts</h3>
+    <a href="/contracts/new?vehicle_id={{ vehicle.id }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i>
+      Add Contract</a>
+  </div>
+  {% if contracts %}
+  {% set type_badge = {'purchase':'badge-info','lease':'badge-warning','rental':'badge-ghost'} %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Reference</th>
+          <th>Company</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Cost</th>
+          <th>Monthly</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for contract in contracts %}
+        <tr>
+          <td><span class="badge {{ type_badge.get(contract.contract_type.value,'badge-ghost') }}">{{
+              contract.contract_type.value.title() }}</span></td>
+          <td class="mono" style="font-size:12.5px;">{{ contract.reference or '—' }}</td>
+          <td>{{ contract.company or '—' }}</td>
+          <td style="color:var(--text-secondary);">{{ contract.start_date | fmt_date }}</td>
+          <td style="color:var(--text-secondary);">{{ contract.end_date | fmt_date if contract.end_date else
+            'Open-ended' }}</td>
+          <td style="font-weight:600;">{{ contract.cost | currency }}</td>
+          <td style="color:var(--text-secondary);">{{ contract.monthly_cost | currency if contract.monthly_cost else '—'
+            }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <i class="fa-solid fa-file-contract"></i>
+    <h3>No contracts</h3>
+    <p><a href="/contracts/new?vehicle_id={{ vehicle.id }}" style="color:var(--accent)">Add a contract</a></p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Insurance tab -->
+<div id="tab-insurance" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <h3 style="font-size:14px;font-weight:600;">Insurance Policies</h3>
+    <a href="/insurance/new?vehicle_id={{ vehicle.id }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i>
+      Add Policy</a>
+  </div>
+  {% if insurance_policies %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Policy #</th>
+          <th>Insurer</th>
+          <th>Coverage</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Premium</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for policy in insurance_policies %}
+        {% set days_left = policy.end_date | days_until %}
+        <tr>
+          <td class="mono" style="font-size:12.5px;">{{ policy.policy_number }}</td>
+          <td style="font-weight:500;">{{ policy.insurer }}</td>
+          <td style="color:var(--text-secondary);">{{ policy.coverage_type or '—' }}</td>
+          <td style="color:var(--text-secondary);">{{ policy.start_date | fmt_date }}</td>
+          <td style="color:var(--text-secondary);">{{ policy.end_date | fmt_date }}</td>
+          <td style="font-weight:600;">{{ policy.premium | currency }}</td>
+          <td>
+            {% if days_left is not none and days_left < 0 %} <span class="badge badge-danger">Expired</span>
+              {% elif days_left is not none and days_left <= 30 %} <span class="badge badge-warning">Expiring</span>
+                {% else %}
+                <span class="badge badge-success">Active</span>
+                {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:40px;">
+    <i class="fa-solid fa-shield-halved"></i>
+    <h3>No insurance policies</h3>
+    <p><a href="/insurance/new?vehicle_id={{ vehicle.id }}" style="color:var(--accent)">Add a policy</a></p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showTab(name, el) {
+    event.preventDefault();
+    document.querySelectorAll('[id^="tab-"]').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).style.display = 'block';
+    el.classList.add('active');
+  }
+</script>
+{% endblock %}

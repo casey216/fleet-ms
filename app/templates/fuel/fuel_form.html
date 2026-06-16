@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Log Fuel — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/fuel">Fuel Logs</a>
+    <span class="sep">/</span>
+    <span class="current">New Entry</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Log Fuel</h1>
+        <p class="page-subtitle">Record a fuel fill-up for a vehicle</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:620px;">
+    <form method="post" action="/fuel/new" id="fuel-form">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-gas-pump" style="margin-right:8px;color:var(--accent)"></i>Fill-up Details
+        </h3>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Vehicle *</label>
+                <select name="vehicle_id" class="form-select" required>
+                    <option value="">Select vehicle…</option>
+                    {% for v in vehicles %}
+                    <option value="{{ v.id }}" {% if selected_vehicle==v.id %}selected{% endif %}>
+                        {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date *</label>
+                <input type="date" name="log_date" class="form-input" value="{{ today }}" required>
+            </div>
+        </div>
+
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label class="form-label">Liters *</label>
+                <input type="number" name="liters" id="liters" class="form-input" step="0.01" min="0.1"
+                    placeholder="45.00" required oninput="calcTotal()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cost per Liter *</label>
+                <input type="number" name="cost_per_liter" id="cost_per_liter" class="form-input" step="0.001" min="0"
+                    placeholder="1.850" required oninput="calcTotal()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Total Cost</label>
+                <input type="text" id="total_display" class="form-input" placeholder="₦0.00" readonly
+                    style="background:var(--bg-hover);cursor:default;">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Odometer at Fill-up (km) *</label>
+                <input type="number" name="odometer" class="form-input" min="0" placeholder="45000" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Station / Location</label>
+                <input type="text" name="station" class="form-input" placeholder="e.g. Shell on Main St">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea" placeholder="Any notes about this fill-up…"
+                rows="2"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <a href="/fuel" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-gas-pump"></i> Save Log
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function calcTotal() {
+  const liters = parseFloat(document.getElementById('liters').value) || 0;
+  const cpl = parseFloat(document.getElementById('cost_per_liter').value) || 0;
+  const total = liters * cpl;
+  document.getElementById('total_display').value = total > 0 ? '₦' + total.toFixed(2) : '';
+}
+</script>
+{% endblock %}

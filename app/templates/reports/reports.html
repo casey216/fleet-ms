@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Reports — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-chart-bar" style="margin-right:6px"></i>Reports</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Reports & Analytics</h1>
+        <p class="page-subtitle">Year-to-date fleet performance and cost analysis</p>
+    </div>
+</div>
+
+<!-- YTD KPIs -->
+<div class="stats-grid" style="margin-bottom:28px;">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-car"></i></div>
+        <div class="stat-value">{{ total_vehicles }}</div>
+        <div class="stat-label">Total Vehicles</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-gas-pump"></i></div>
+        <div class="stat-value">{{ ytd_fuel | currency }}</div>
+        <div class="stat-label">YTD Fuel Cost</div>
+    </div>
+    <div class="stat-card yellow">
+        <div class="stat-icon yellow"><i class="fa-solid fa-wrench"></i></div>
+        <div class="stat-value">{{ ytd_maintenance | currency }}</div>
+        <div class="stat-label">YTD Maintenance Cost</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon green"><i class="fa-solid fa-droplet"></i></div>
+        <div class="stat-value">{{ "%.0f"|format(total_fuel_liters) }} L</div>
+        <div class="stat-label">Total Fuel (All Time)</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon red"><i class="fa-solid fa-sack-dollar"></i></div>
+        <div class="stat-value">{{ (ytd_fuel + ytd_maintenance) | currency }}</div>
+        <div class="stat-label">YTD Total Fleet Cost</div>
+    </div>
+</div>
+
+<!-- Monthly cost chart -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-chart-column"
+                style="margin-right:8px;color:var(--accent)"></i>Monthly Cost Breakdown (Last 12 Months)</div>
+    </div>
+    <div style="height:280px;position:relative;">
+        <canvas id="monthlyChart" data-chart='{{ monthly_data | tojson }}'></canvas>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+    <!-- Top fuel cost vehicles -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-ranking-star"
+                    style="margin-right:8px;color:var(--info)"></i>Top Fuel Cost Vehicles</div>
+        </div>
+        {% if top_fuel_vehicles %}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            {% for vehicle, total in top_fuel_vehicles %}
+            {% set max_fuel = top_fuel_vehicles[0][1] %}
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                    <a href="/vehicles/{{ vehicle.id }}"
+                        style="color:var(--text-primary);text-decoration:none;font-size:13px;font-weight:500;">
+                        <span class="mono" style="color:var(--accent);">{{ vehicle.license_plate }}</span>
+                        <span style="color:var(--text-secondary);margin-left:6px;">{{ vehicle.make }} {{ vehicle.model
+                            }}</span>
+                    </a>
+                    <span style="font-size:13px;font-weight:600;color:var(--info);">{{ total | currency }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:{{ ((total / max_fuel) * 100) | round }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-gas-pump"></i>
+            <h3>No fuel data yet</h3>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Top maintenance cost vehicles -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-ranking-star"
+                    style="margin-right:8px;color:var(--warning)"></i>Top Maintenance Cost Vehicles</div>
+        </div>
+        {% if top_maint_vehicles %}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            {% for vehicle, total in top_maint_vehicles %}
+            {% set max_maint = top_maint_vehicles[0][1] %}
+            <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                    <a href="/vehicles/{{ vehicle.id }}"
+                        style="color:var(--text-primary);text-decoration:none;font-size:13px;font-weight:500;">
+                        <span class="mono" style="color:var(--accent);">{{ vehicle.license_plate }}</span>
+                        <span style="color:var(--text-secondary);margin-left:6px;">{{ vehicle.make }} {{ vehicle.model
+                            }}</span>
+                    </a>
+                    <span style="font-size:13px;font-weight:600;color:var(--warning);">{{ total | currency }}</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill yellow" style="width:{{ ((total / max_maint) * 100) | round }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-wrench"></i>
+            <h3>No maintenance cost data</h3>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Monthly breakdown table -->
+    <div class="card" style="grid-column:1/-1;">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-table"
+                    style="margin-right:8px;color:var(--accent)"></i>Monthly Breakdown</div>
+        </div>
+        <div class="table-wrapper" style="border:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Fuel Cost</th>
+                        <th>Maintenance Cost</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in monthly_data | reverse %}
+                    <tr>
+                        <td style="font-weight:500;">{{ row.month }}</td>
+                        <td style="color:var(--info);">{{ row.fuel | currency }}</td>
+                        <td style="color:var(--warning);">{{ row.maintenance | currency }}</td>
+                        <td style="font-weight:600;">{{ row.total | currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

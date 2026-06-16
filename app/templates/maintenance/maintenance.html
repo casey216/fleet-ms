@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Maintenance — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-wrench" style="margin-right:6px"></i>Maintenance</span>
+</div>
+{% endblock %}
+
+{% block content %}
+{% set mstatus_badge = {
+'scheduled': 'badge-warning',
+'in_progress': 'badge-info',
+'completed': 'badge-success',
+'cancelled': 'badge-ghost',
+} %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Maintenance</h1>
+        <p class="page-subtitle">{{ records|length }} record{{ 's' if records|length != 1 }}</p>
+    </div>
+    {% if can_write %}
+    <a href="/maintenance/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Schedule Service</a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/maintenance"
+            class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+        <a href="/maintenance?status=scheduled"
+            class="btn btn-sm {% if status_filter == 'scheduled' %}btn-secondary{% else %}btn-secondary{% endif %}"
+            style="{% if status_filter == 'scheduled' %}background:var(--warning-bg);color:var(--warning);{% endif %}">Scheduled</a>
+        <a href="/maintenance?status=in_progress"
+            class="btn btn-sm {% if status_filter == 'in_progress' %}btn-secondary{% else %}btn-secondary{% endif %}"
+            style="{% if status_filter == 'in_progress' %}background:var(--info-bg);color:var(--info);{% endif %}">In
+            Progress</a>
+        <a href="/maintenance?status=completed"
+            class="btn btn-sm {% if status_filter == 'completed' %}btn-success{% else %}btn-secondary{% endif %}">Completed</a>
+    </div>
+
+    <select class="form-select" style="width:220px;" onchange="window.location='/maintenance?vehicle_id='+this.value">
+        <option value="">All vehicles</option>
+        {% for v in vehicles %}
+        <option value="{{ v.id }}" {% if vehicle_filter==v.id %}selected{% endif %}>
+            {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+{% if records %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Vehicle</th>
+                <th>Service</th>
+                <th>Type</th>
+                <th>Scheduled</th>
+                <th>Status</th>
+                <th>Cost</th>
+                <th>Vendor</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="maintenance-table-body">
+            {% include "maintenance/maintenance_rows.html" %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <i class="fa-solid fa-wrench"></i>
+        <h3>No maintenance records</h3>
+        <p>Schedule preventive maintenance to keep your fleet in top shape.</p>
+        {% if can_write %}
+        <a href="/maintenance/new" class="btn btn-primary" style="margin-top:16px">
+            <i class="fa-solid fa-plus"></i> Schedule Service
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

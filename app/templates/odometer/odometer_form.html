@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if log else 'Log' }} Odometer Reading — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/odometer">Odometer Logs</a>
+    <span class="sep">/</span>
+    <span class="current">{{ 'Edit Reading' if log else 'New Reading' }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit Odometer Reading' if log else 'Log Odometer Reading' }}</h1>
+        <p class="page-subtitle">{{ 'Update this reading' if log else 'Record a new odometer reading for a vehicle' }}
+        </p>
+    </div>
+</div>
+
+<div class="card" style="max-width:520px;">
+    <form method="post" action="{{ '/odometer/' + log.id + '/edit' if log else '/odometer/new' }}">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-gauge" style="margin-right:8px;color:var(--accent)"></i>Reading Details
+        </h3>
+
+        <div class="form-group">
+            <label class="form-label">Vehicle *</label>
+            <select name="vehicle_id" class="form-select" required {% if log %}disabled{% endif %}
+                onchange="updateCurrentOdo(this.value)">
+                <option value="">Select vehicle…</option>
+                {% for v in vehicles %}
+                <option value="{{ v.id }}" data-odo="{{ v.odometer }}" {% if log and log.vehicle_id==v.id %}selected {%
+                    elif selected_vehicle==v.id %}selected{% endif %}>
+                    {{ v.license_plate }} — {{ v.make }} {{ v.model }} ({{ v.odometer | km }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if log %}
+            <input type="hidden" name="vehicle_id" value="{{ log.vehicle_id }}">
+            {% endif %}
+        </div>
+
+        {% if current_odometer %}
+        <div
+            style="padding:10px 14px;background:var(--bg-hover);border-radius:var(--radius-sm);margin-bottom:16px;font-size:13px;color:var(--text-secondary);">
+            <i class="fa-solid fa-gauge" style="margin-right:6px;color:var(--accent)"></i>
+            Current odometer on file: <strong class="mono" style="color:var(--text-primary);">{{
+                "{:,}".format(current_odometer) }} km</strong>
+        </div>
+        {% endif %}
+
+        <div id="current-odo-hint"
+            style="display:none;padding:10px 14px;background:var(--bg-hover);border-radius:var(--radius-sm);margin-bottom:16px;font-size:13px;color:var(--text-secondary);">
+            <i class="fa-solid fa-gauge" style="margin-right:6px;color:var(--accent)"></i>
+            Current odometer: <strong class="mono" id="odo-display" style="color:var(--text-primary);"></strong>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Date *</label>
+                <input type="date" name="log_date" class="form-input"
+                    value="{{ log.date.isoformat() if log and log.date else today }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Odometer Reading (km) *</label>
+                <input type="number" name="value" class="form-input mono" min="0" placeholder="e.g. 45000"
+                    value="{{ log.value if log else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea" rows="2"
+                placeholder="e.g. End of month reading, pre-service check…">{{ log.notes or '' if log else '' }}</textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <a href="/odometer" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-{{ 'floppy-disk' if log else 'gauge' }}"></i>
+                {{ 'Save Changes' if log else 'Save Reading' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateCurrentOdo(vehicleId) {
+  const sel = document.querySelector(`select[name="vehicle_id"] option[value="${vehicleId}"]`);
+  const hint = document.getElementById('current-odo-hint');
+  const display = document.getElementById('odo-display');
+  if (sel && sel.dataset.odo) {
+    const odo = parseInt(sel.dataset.odo).toLocaleString();
+    display.textContent = odo + ' km';
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+// Trigger on load if a vehicle is pre-selected
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.querySelector('select[name="vehicle_id"]');
+  if (sel && sel.value) updateCurrentOdo(sel.value);
+});
+</script>
+{% endblock %}

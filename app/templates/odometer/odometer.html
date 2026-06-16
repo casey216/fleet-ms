@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Odometer Logs — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-gauge" style="margin-right:6px"></i>Odometer Logs</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Odometer Logs</h1>
+        <p class="page-subtitle">{{ logs|length }} reading{{ 's' if logs|length != 1 }}</p>
+    </div>
+    {% if can_write %}
+    <a href="/odometer/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Log Reading</a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <select class="form-select" style="width:240px;"
+        onchange="location.href='/odometer'+(this.value?'?vehicle_id='+this.value:'')">
+        <option value="">All vehicles</option>
+        {% for v in vehicles %}
+        <option value="{{ v.id }}" {% if vehicle_filter==v.id %}selected{% endif %}>
+            {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+{% if logs %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Vehicle</th>
+                <th>Reading (km)</th>
+                <th>Distance Since Last</th>
+                <th>Notes</th>
+                <th>Logged</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log, vehicle, delta in logs %}
+            <tr>
+                <td style="color:var(--text-secondary);">{{ log.date | fmt_date }}</td>
+                <td>
+                    <a href="/vehicles/{{ vehicle.id }}" class="mono"
+                        style="color:var(--accent);text-decoration:none;font-weight:600;">
+                        {{ vehicle.license_plate }}
+                    </a>
+                    <div style="font-size:12px;color:var(--text-muted);">{{ vehicle.make }} {{ vehicle.model }}</div>
+                </td>
+                <td>
+                    <span class="mono" style="font-size:15px;font-weight:600;">{{ "{:,}".format(log.value) }}</span>
+                    <span style="font-size:12px;color:var(--text-muted);margin-left:2px;">km</span>
+                </td>
+                <td>
+                    {% if delta is not none %}
+                    {% if delta > 0 %}
+                    <span style="color:var(--success);font-weight:500;">+{{ "{:,}".format(delta) }} km</span>
+                    {% elif delta == 0 %}
+                    <span style="color:var(--text-muted);">No change</span>
+                    {% else %}
+                    <span style="color:var(--danger);font-weight:500;">{{ "{:,}".format(delta) }} km</span>
+                    {% endif %}
+                    {% else %}
+                    <span style="color:var(--text-muted);">First reading</span>
+                    {% endif %}
+                </td>
+                <td style="color:var(--text-secondary);max-width:200px;">
+                    <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">{{ log.notes
+                        or '—' }}</span>
+                </td>
+                <td style="color:var(--text-muted);font-size:12px;">
+                    {{ log.created_at.strftime('%b %d, %H:%M') if log.created_at else '—' }}
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;">
+                        {% if can_write %}
+                        <a href="/odometer/{{ log.id }}/edit" class="btn btn-sm btn-secondary btn-icon"
+                            data-tooltip="Edit">
+                            <i class="fa-solid fa-pen"></i>
+                        </a>
+                        <form method="post" action="/odometer/{{ log.id }}/delete" id="del-odo-{{ log.id }}"
+                            style="display:inline;">
+                            <button type="button" class="btn btn-sm btn-danger btn-icon" data-tooltip="Delete"
+                                onclick="confirmDelete('del-odo-{{ log.id }}','Delete this odometer reading?')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Mini chart per vehicle if filtered -->
+{% if vehicle_filter and logs %}
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <div class="card-title"><i class="fa-solid fa-chart-line"
+                style="margin-right:8px;color:var(--accent)"></i>Odometer Trend</div>
+    </div>
+    <div style="height:220px;position:relative;">
+        <canvas id="odoChart"
+            data-labels='{{ logs | map(attribute=0) | map(attribute="date") | map("strftime", "%b %d") | list | tojson }}'
+            data-values='{{ logs | map(attribute=0) | map(attribute="value") | list | tojson }}'>
+        </canvas>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <i class="fa-solid fa-gauge"></i>
+        <h3>No odometer readings yet</h3>
+        <p>Track mileage over time by logging regular odometer readings per vehicle.</p>
+        {% if can_write %}
+        <a href="/odometer/new" class="btn btn-primary" style="margin-top:16px">
+            <i class="fa-solid fa-plus"></i> Log Reading
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('odoChart');
+  if (!el) return;
+  const labels = JSON.parse(el.dataset.labels || '[]').reverse();
+  const values = JSON.parse(el.dataset.values || '[]').reverse();
+  new Chart(el, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Odometer (km)',
+        data: values,
+        borderColor: '#34d399',
+        backgroundColor: 'rgba(52,211,153,0.08)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: '#34d399',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d27',
+          borderColor: '#2a2e3f',
+          borderWidth: 1,
+          callbacks: { label: ctx => ` ${ctx.parsed.y.toLocaleString()} km` }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#2a2e3f' } },
+        y: {
+          grid: { color: '#2a2e3f' },
+          ticks: { callback: v => v.toLocaleString() + ' km' }
+        }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

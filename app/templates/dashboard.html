@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-gauge-high" style="margin-right:6px"></i>Dashboard</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Fleet Overview</h1>
+        <p class="page-subtitle">Real-time status of your entire fleet</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a href="/vehicles/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Vehicle</a>
+        <a href="/reports" class="btn btn-secondary"><i class="fa-solid fa-chart-bar"></i> Reports</a>
+    </div>
+</div>
+
+<!-- Quick links -->
+<div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+    <a href="/contracts" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-contract"></i> Contracts</a>
+    <a href="/insurance" class="btn btn-secondary btn-sm"><i class="fa-solid fa-shield-halved"></i> Insurance</a>
+    <a href="/odometer" class="btn btn-secondary btn-sm"><i class="fa-solid fa-gauge"></i> Odometer Logs</a>
+    <a href="/alerts" class="btn btn-secondary btn-sm"><i class="fa-solid fa-bell"></i> Alerts</a>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-car"></i></div>
+        <div class="stat-value">{{ total_vehicles }}</div>
+        <div class="stat-label">Total Vehicles</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-value">{{ active_vehicles }}</div>
+        <div class="stat-label">Active</div>
+    </div>
+    <div class="stat-card yellow">
+        <div class="stat-icon yellow"><i class="fa-solid fa-wrench"></i></div>
+        <div class="stat-value">{{ in_maintenance }}</div>
+        <div class="stat-label">In Maintenance</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon red"><i class="fa-solid fa-gas-pump"></i></div>
+        <div class="stat-value">${{ "%.0f"|format(monthly_fuel_cost) }}</div>
+        <div class="stat-label">Fuel Cost This Month</div>
+    </div>
+    <div class="stat-card yellow">
+        <div class="stat-icon yellow"><i class="fa-solid fa-calendar-exclamation"></i></div>
+        <div class="stat-value">{{ pending_maintenance }}</div>
+        <div class="stat-label">Pending Maintenance</div>
+    </div>
+</div>
+
+<!-- Charts & lists -->
+<div class="dashboard-grid">
+
+    <!-- Fuel trend chart -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-chart-line"
+                    style="margin-right:8px;color:var(--accent)"></i>Fuel Cost Trend</div>
+            <span style="font-size:12px;color:var(--text-muted)">Last 6 months</span>
+        </div>
+        <div style="height:220px;position:relative;">
+            <canvas id="fuelChart" data-chart='{{ fuel_chart | tojson }}'></canvas>
+        </div>
+    </div>
+
+    <!-- Vehicle status doughnut -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-circle-half-stroke"
+                    style="margin-right:8px;color:var(--accent)"></i>Fleet Status</div>
+        </div>
+        <div style="height:220px;position:relative;">
+            <canvas id="statusChart" data-chart='{{ status_counts | tojson }}'></canvas>
+        </div>
+    </div>
+
+    <!-- Upcoming maintenance -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-clock"
+                    style="margin-right:8px;color:var(--warning)"></i>Upcoming Maintenance</div>
+            <a href="/maintenance" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        {% if upcoming_maintenance %}
+        <div class="table-wrapper" style="border:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Service</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record, vehicle in upcoming_maintenance %}
+                    <tr>
+                        <td>
+                            <a href="/vehicles/{{ vehicle.id }}"
+                                style="color:var(--accent);text-decoration:none;font-family:var(--font-mono);font-weight:600;">
+                                {{ vehicle.license_plate }}
+                            </a>
+                        </td>
+                        <td>{{ record.title }}</td>
+                        <td>
+                            {% set days = record.scheduled_date | days_until %}
+                            {% if days <= 0 %} <span class="badge badge-danger">Overdue</span>
+                                {% elif days <= 2 %} <span class="badge badge-warning">{{ record.scheduled_date |
+                                    fmt_date }}</span>
+                                    {% else %}
+                                    <span style="color:var(--text-secondary)">{{ record.scheduled_date | fmt_date
+                                        }}</span>
+                                    {% endif %}
+                        </td>
+                        <td><span class="badge badge-warning">{{ record.status.value.replace('_',' ').title() }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-circle-check" style="color:var(--success)"></i>
+            <h3>All clear!</h3>
+            <p>No upcoming maintenance in the next 7 days</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent fuel logs -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-gas-pump"
+                    style="margin-right:8px;color:var(--info)"></i>Recent Fuel Logs</div>
+            <a href="/fuel" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        {% if recent_fuel_logs %}
+        <div class="table-wrapper" style="border:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Date</th>
+                        <th>Liters</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log, vehicle in recent_fuel_logs %}
+                    <tr>
+                        <td>
+                            <a href="/vehicles/{{ vehicle.id }}"
+                                style="color:var(--accent);text-decoration:none;font-family:var(--font-mono);font-weight:600;">
+                                {{ vehicle.license_plate }}
+                            </a>
+                        </td>
+                        <td style="color:var(--text-secondary)">{{ log.date | fmt_date }}</td>
+                        <td>{{ "%.1f"|format(log.liters) }}L</td>
+                        <td style="font-weight:600;">{{ log.total_cost | currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-gas-pump"></i>
+            <h3>No fuel logs yet</h3>
+            <p><a href="/fuel/new" style="color:var(--accent)">Add the first one</a></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Active alerts -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-bell" style="margin-right:8px;color:var(--warning)"></i>Active
+                Alerts</div>
+            <a href="/alerts" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        {% if recent_alerts %}
+        {% set type_color =
+        {'contract_expiry':'warning','insurance_expiry':'danger','maintenance_due':'warning','license_expiry':'danger','service_due':'info'}
+        %}
+        <div style="display:flex;flex-direction:column;gap:0;">
+            {% for alert in recent_alerts %}
+            {% set color = type_color.get(alert.alert_type.value, 'info') %}
+            <div class="alert-item">
+                <div class="alert-dot {{ color }}"></div>
+                <div style="flex:1;">
+                    <div style="font-weight:500;font-size:13.5px;">{{ alert.title }}</div>
+                    {% if alert.message %}
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{ alert.message }}</div>
+                    {% endif %}
+                </div>
+                {% if alert.due_date %}
+                <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;">{{ alert.due_date | fmt_date }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-bell-slash" style="color:var(--success)"></i>
+            <h3>All clear!</h3>
+            <p>No active alerts right now</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent activity -->
+    <div class="card full-width">
+        <div class="card-header">
+            <div class="card-title"><i class="fa-solid fa-timeline"
+                    style="margin-right:8px;color:var(--accent)"></i>Recent Activity</div>
+        </div>
+        {% if activity %}
+        <div style="display:flex;flex-direction:column;gap:0;">
+            {% for log, act_user in activity %}
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);">
+                <div class="user-avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0;">
+                    {{ act_user.full_name[0].upper() if act_user else "?" }}
+                </div>
+                <div style="flex:1;">
+                    <span style="font-weight:500;">{{ act_user.full_name if act_user else "System" }}</span>
+                    <span style="color:var(--text-secondary);"> — {{ log.action.replace('_',' ') }}</span>
+                    {% if log.entity_type %}
+                    <span class="badge badge-ghost" style="margin-left:6px;">{{ log.entity_type }}</span>
+                    {% endif %}
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;">
+                    {{ log.created_at.strftime('%b %d, %H:%M') if log.created_at else '' }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:30px;">
+            <i class="fa-solid fa-timeline"></i>
+            <h3>No activity yet</h3>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if record else 'Schedule' }} Maintenance — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/maintenance">Maintenance</a>
+    <span class="sep">/</span>
+    <span class="current">{{ 'Edit Record' if record else 'Schedule Service' }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit Maintenance Record' if record else 'Schedule Service' }}</h1>
+        <p class="page-subtitle">{{ 'Update maintenance information' if record else 'Schedule a new maintenance or
+            inspection' }}</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:700px;">
+    <form method="post" action="{{ '/maintenance/' + record.id + '/edit' if record else '/maintenance/new' }}">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-wrench" style="margin-right:8px;color:var(--accent)"></i>Service Details
+        </h3>
+
+        <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input type="text" name="title" class="form-input" placeholder="e.g. 10,000 km Oil Change"
+                value="{{ record.title if record else '' }}" required>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Vehicle *</label>
+                <select name="vehicle_id" class="form-select" required {% if record %}disabled{% endif %}>
+                    <option value="">Select vehicle…</option>
+                    {% for v in vehicles %}
+                    <option value="{{ v.id }}" {% if record and record.vehicle_id==v.id %}selected {% elif
+                        selected_vehicle==v.id %}selected{% endif %}>
+                        {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if record %}
+                <input type="hidden" name="vehicle_id" value="{{ record.vehicle_id }}">
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label class="form-label">Maintenance Type</label>
+                <select name="maintenance_type" class="form-select">
+                    {% for t in types %}
+                    <option value="{{ t }}" {% if record and record.maintenance_type.value==t %}selected{% endif %}>
+                        {{ t.replace('_',' ').title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Scheduled Date *</label>
+                <input type="date" name="scheduled_date" class="form-input"
+                    value="{{ record.scheduled_date.isoformat() if record and record.scheduled_date else today }}"
+                    required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    {% for s in statuses %}
+                    <option value="{{ s }}" {% if record and record.status.value==s %}selected{% elif not record and
+                        s=='scheduled' %}selected{% endif %}>
+                        {{ s.replace('_',' ').title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if record %}
+        <div class="form-group">
+            <label class="form-label">Completed Date</label>
+            <input type="date" name="completed_date" class="form-input"
+                value="{{ record.completed_date.isoformat() if record.completed_date else '' }}">
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-textarea" placeholder="What needs to be done / was done…"
+                rows="2">{{ record.description or '' if record else '' }}</textarea>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Cost ($)</label>
+                <input type="number" name="cost" class="form-input" step="0.01" min="0" placeholder="0.00"
+                    value="{{ record.cost if record else 0 }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Vendor / Workshop</label>
+                <input type="text" name="vendor" class="form-input" placeholder="e.g. AutoFix Ltd"
+                    value="{{ record.vendor or '' if record else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Assigned Technician</label>
+            <select name="technician_id" class="form-select">
+                <option value="">— None —</option>
+                {% for t in technicians %}
+                <option value="{{ t.id }}" {% if record and record.technician_id==t.id %}selected{% endif %}>
+                    {{ t.full_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Next Service Date</label>
+                <input type="date" name="next_service_date" class="form-input"
+                    value="{{ record.next_service_date.isoformat() if record and record.next_service_date else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Next Service Km</label>
+                <input type="number" name="next_service_km" class="form-input" min="0" placeholder="e.g. 55000"
+                    value="{{ record.next_service_km or '' if record else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea" placeholder="Additional notes…"
+                rows="2">{{ record.notes or '' if record else '' }}</textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <a href="/maintenance" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-{{ 'floppy-disk' if record else 'calendar-plus' }}"></i>
+                {{ 'Save Changes' if record else 'Schedule Service' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

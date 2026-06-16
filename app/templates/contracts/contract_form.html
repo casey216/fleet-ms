@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if contract else 'New' }} Contract — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/contracts">Contracts</a>
+    <span class="sep">/</span>
+    <span class="current">{{ 'Edit Contract' if contract else 'New Contract' }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit Contract' if contract else 'New Contract' }}</h1>
+        <p class="page-subtitle">{{ 'Update contract details' if contract else 'Add a purchase, lease, or rental
+            contract' }}</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:680px;">
+    <form method="post" action="{{ '/contracts/' + contract.id + '/edit' if contract else '/contracts/new' }}">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-file-contract" style="margin-right:8px;color:var(--accent)"></i>Contract Details
+        </h3>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Vehicle *</label>
+                <select name="vehicle_id" class="form-select" required>
+                    <option value="">Select vehicle…</option>
+                    {% for v in vehicles %}
+                    <option value="{{ v.id }}" {% if contract and contract.vehicle_id==v.id %}selected {% elif
+                        selected_vehicle==v.id %}selected{% endif %}>
+                        {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Contract Type</label>
+                <select name="contract_type" class="form-select">
+                    {% for ct in contract_types %}
+                    <option value="{{ ct }}" {% if contract and contract.contract_type.value==ct %}selected{% endif %}>
+                        {{ ct.title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Reference / PO Number</label>
+                <input type="text" name="reference" class="form-input mono" placeholder="e.g. LEASE-2024-001"
+                    value="{{ contract.reference or '' if contract else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Company / Supplier</label>
+                <input type="text" name="company" class="form-input" placeholder="e.g. AutoLease Corp"
+                    value="{{ contract.company or '' if contract else '' }}">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Start Date *</label>
+                <input type="date" name="start_date" class="form-input"
+                    value="{{ contract.start_date.isoformat() if contract and contract.start_date else today }}"
+                    required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">End Date <span style="color:var(--text-muted);font-weight:400;">(blank =
+                        open-ended)</span></label>
+                <input type="date" name="end_date" class="form-input"
+                    value="{{ contract.end_date.isoformat() if contract and contract.end_date else '' }}">
+            </div>
+        </div>
+
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label class="form-label">Total Cost ($)</label>
+                <input type="number" name="cost" class="form-input" step="0.01" min="0" placeholder="0.00"
+                    value="{{ contract.cost if contract else 0 }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Monthly Cost ($)</label>
+                <input type="number" name="monthly_cost" class="form-input" step="0.01" min="0" placeholder="0.00"
+                    value="{{ contract.monthly_cost if contract else 0 }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Max KM</label>
+                <input type="number" name="max_km" class="form-input" min="0" placeholder="e.g. 60000"
+                    value="{{ contract.max_km or '' if contract else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea"
+                placeholder="Any additional contract terms or notes…">{{ contract.notes or '' if contract else '' }}</textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <a href="{{ '/contracts/' + contract.id if contract else '/contracts' }}"
+                class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-{{ 'floppy-disk' if contract else 'plus' }}"></i>
+                {{ 'Save Changes' if contract else 'Add Contract' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% set status_badges = {
+'active': 'badge-success',
+'in_maintenance': 'badge-warning',
+'out_of_service': 'badge-danger',
+'reserved': 'badge-info',
+} %}
+
+{% set fuel_icons = {
+'petrol': '⛽',
+'diesel': '🛢️',
+'electric': '⚡',
+'hybrid': '🔋',
+'lpg': '🔵',
+'cng': '💨',
+} %}
+
+{% for vehicle in vehicles %}
+<tr>
+    <td>
+        <a href="/vehicles/{{ vehicle.id }}" class="mono"
+            style="color:var(--accent);text-decoration:none;font-weight:600;letter-spacing:0.06em;">
+            {{ vehicle.license_plate }}
+        </a>
+    </td>
+    <td>
+        <div style="font-weight:500;">{{ vehicle.make }} {{ vehicle.model }}</div>
+        {% if vehicle.color %}
+        <div style="font-size:12px;color:var(--text-muted);">{{ vehicle.color }}</div>
+        {% endif %}
+    </td>
+    <td style="color:var(--text-secondary)">{{ vehicle.year }}</td>
+    <td>
+        <span style="font-size:13px;">{{ fuel_icons.get(vehicle.fuel_type.value, '') }}</span>
+        <span style="color:var(--text-secondary);font-size:12px;margin-left:4px;">{{ vehicle.fuel_type.value.title()
+            }}</span>
+    </td>
+    <td style="font-variant-numeric:tabular-nums;">{{ vehicle.odometer | km }}</td>
+    <td>
+        {% if vehicle.driver_id and drivers.get(vehicle.driver_id) %}
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div class="user-avatar" style="width:24px;height:24px;font-size:10px;">
+                {{ drivers[vehicle.driver_id].full_name[0].upper() }}
+            </div>
+            <a href="/drivers/{{ vehicle.driver_id }}"
+                style="color:var(--text-primary);text-decoration:none;font-size:13px;">
+                {{ drivers[vehicle.driver_id].full_name }}
+            </a>
+        </div>
+        {% else %}
+        <span style="color:var(--text-muted);font-size:13px;">Unassigned</span>
+        {% endif %}
+    </td>
+    <td>
+        <span class="badge {{ status_badges.get(vehicle.status.value, 'badge-ghost') }}">
+            {{ vehicle.status.value.replace('_', ' ').title() }}
+        </span>
+    </td>
+    <td>
+        <div style="display:flex;gap:6px;">
+            <a href="/vehicles/{{ vehicle.id }}" class="btn btn-sm btn-secondary btn-icon" data-tooltip="View">
+                <i class="fa-solid fa-eye"></i>
+            </a>
+            {% if can_write %}
+            <a href="/vehicles/{{ vehicle.id }}/edit" class="btn btn-sm btn-secondary btn-icon" data-tooltip="Edit">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+            {% endif %}
+            {% if can_delete %}
+            <form method="post" action="/vehicles/{{ vehicle.id }}/delete" id="del-{{ vehicle.id }}"
+                style="display:inline;">
+                <button type="button" class="btn btn-sm btn-danger btn-icon" data-tooltip="Delete"
+                    onclick="confirmDelete('del-{{ vehicle.id }}', 'Delete {{ vehicle.license_plate }}?')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}

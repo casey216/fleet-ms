@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Vehicles — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-car" style="margin-right:6px"></i>Vehicles</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Vehicles</h1>
+        <p class="page-subtitle">{{ vehicles|length }} vehicle{{ 's' if vehicles|length != 1 }} in fleet</p>
+    </div>
+    {% if can_write %}
+    <a href="/vehicles/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Vehicle</a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <div class="search-wrapper">
+        <i class="fa-solid fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search plate, make, model…" name="search"
+            value="{{ search or '' }}" hx-get="/vehicles" hx-trigger="keyup changed delay:300ms"
+            hx-target="#vehicle-table-body" hx-include="[name='status_filter']">
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/vehicles"
+            class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+        <a href="/vehicles?status=active"
+            class="btn btn-sm {% if status_filter == 'active' %}btn-success{% else %}btn-secondary{% endif %}">Active</a>
+        <a href="/vehicles?status=in_maintenance"
+            class="btn btn-sm {% if status_filter == 'in_maintenance' %}btn-secondary{% else %}btn-secondary{% endif %}"
+            style="{% if status_filter == 'in_maintenance' %}background:var(--warning-bg);color:var(--warning);{% endif %}">In
+            Maintenance</a>
+        <a href="/vehicles?status=out_of_service"
+            class="btn btn-sm {% if status_filter == 'out_of_service' %}btn-danger{% else %}btn-secondary{% endif %}">Out
+            of Service</a>
+    </div>
+
+    <input type="hidden" name="status_filter" value="{{ status_filter or '' }}">
+</div>
+
+{% if vehicles %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Plate</th>
+                <th>Vehicle</th>
+                <th>Year</th>
+                <th>Fuel</th>
+                <th>Odometer</th>
+                <th>Driver</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="vehicle-table-body">
+            {% include "fleet/vehicle_rows.html" %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <i class="fa-solid fa-car"></i>
+        <h3>No vehicles yet</h3>
+        <p>Add your first vehicle to get started tracking your fleet.</p>
+        {% if can_write %}
+        <a href="/vehicles/new" class="btn btn-primary" style="margin-top:16px"><i class="fa-solid fa-plus"></i> Add
+            Vehicle</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

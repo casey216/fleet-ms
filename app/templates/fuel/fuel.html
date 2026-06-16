@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Fuel Logs — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-gas-pump" style="margin-right:6px"></i>Fuel Logs</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Fuel Logs</h1>
+        <p class="page-subtitle">{{ fuel_logs|length }} record{{ 's' if fuel_logs|length != 1 }}</p>
+    </div>
+    {% if can_write %}
+    <a href="/fuel/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Log Fuel</a>
+    {% endif %}
+</div>
+
+<!-- Summary stats -->
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-dollar-sign"></i></div>
+        <div class="stat-value">{{ total_cost | currency }}</div>
+        <div class="stat-label">Total Fuel Cost</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon green"><i class="fa-solid fa-droplet"></i></div>
+        <div class="stat-value">{{ "%.0f"|format(total_liters) }} L</div>
+        <div class="stat-label">Total Liters</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fa-solid fa-list"></i></div>
+        <div class="stat-value">{{ fuel_logs|length }}</div>
+        <div class="stat-label">Total Entries</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <div class="form-group" style="margin:0;">
+        <select class="form-select" style="width:220px;"
+            onchange="window.location='/fuel' + (this.value ? '?vehicle_id='+this.value : '')">
+            <option value="">All vehicles</option>
+            {% for v in vehicles %}
+            <option value="{{ v.id }}" {% if vehicle_filter==v.id %}selected{% endif %}>
+                {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if fuel_logs %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Vehicle</th>
+                <th>Liters</th>
+                <th>$/Liter</th>
+                <th>Total Cost</th>
+                <th>Odometer</th>
+                <th>Station</th>
+                <th>Full Tank</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log, vehicle in fuel_logs %}
+            <tr>
+                <td style="color:var(--text-secondary);">{{ log.date | fmt_date }}</td>
+                <td>
+                    <a href="/vehicles/{{ vehicle.id }}" class="mono"
+                        style="color:var(--accent);text-decoration:none;font-weight:600;">
+                        {{ vehicle.license_plate }}
+                    </a>
+                    <div style="font-size:12px;color:var(--text-muted);">{{ vehicle.make }} {{ vehicle.model }}</div>
+                </td>
+                <td style="font-weight:500;">{{ "%.2f"|format(log.liters) }} L</td>
+                <td style="color:var(--text-secondary);">${{ "%.3f"|format(log.cost_per_liter) }}</td>
+                <td style="font-weight:600;color:var(--info);">{{ log.total_cost | currency }}</td>
+                <td class="mono" style="color:var(--text-secondary);">{{ log.odometer | km }}</td>
+                <td style="color:var(--text-secondary);">{{ log.station or '—' }}</td>
+                <td>
+                    {% if log.full_tank %}
+                    <span class="badge badge-success">Full</span>
+                    {% else %}
+                    <span class="badge badge-ghost">Partial</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if can_write %}
+                    <form method="post" action="/fuel/{{ log.id }}/delete" id="del-fuel-{{ log.id }}"
+                        style="display:inline;">
+                        <button type="button" class="btn btn-sm btn-danger btn-icon" data-tooltip="Delete"
+                            onclick="confirmDelete('del-fuel-{{ log.id }}', 'Delete this fuel log entry?')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <i class="fa-solid fa-gas-pump"></i>
+        <h3>No fuel logs yet</h3>
+        <p>Start tracking fuel consumption and costs across your fleet.</p>
+        {% if can_write %}
+        <a href="/fuel/new" class="btn btn-primary" style="margin-top:16px"><i class="fa-solid fa-plus"></i> Log
+            Fuel</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

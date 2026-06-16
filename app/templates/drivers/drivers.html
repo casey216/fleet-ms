@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Drivers & Users — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-users" style="margin-right:6px"></i>Drivers & Users</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Drivers & Users</h1>
+        <p class="page-subtitle">{{ users|length }} user{{ 's' if users|length != 1 }} registered</p>
+    </div>
+    {% if can_write %}
+    <a href="/drivers/new" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add User</a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+    <div class="search-wrapper">
+        <i class="fa-solid fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search name or email…" hx-get="/drivers"
+            hx-trigger="keyup changed delay:300ms" hx-target="#driver-table-body" name="search"
+            value="{{ search or '' }}">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/drivers"
+            class="btn btn-sm {% if not role_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+        {% for r in roles %}
+        <a href="/drivers?role={{ r }}"
+            class="btn btn-sm {% if role_filter == r %}btn-primary{% else %}btn-secondary{% endif %}">
+            {{ r.replace('_',' ').title() }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% set role_colors = {
+'admin': 'badge-error',
+'fleet_manager': 'badge-warning',
+'driver': 'badge-info',
+'viewer': 'badge-ghost',
+} %}
+
+{% if users %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="driver-table-body">
+            {% include "drivers/driver_rows.html" %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <i class="fa-solid fa-users"></i>
+        <h3>No users found</h3>
+        {% if can_write %}
+        <a href="/drivers/new" class="btn btn-primary" style="margin-top:16px"><i class="fa-solid fa-user-plus"></i> Add
+            User</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

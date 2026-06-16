@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if policy else 'New' }} Insurance Policy — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/insurance">Insurance</a>
+    <span class="sep">/</span>
+    <span class="current">{{ 'Edit Policy' if policy else 'Add Policy' }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit Insurance Policy' if policy else 'Add Insurance Policy' }}</h1>
+        <p class="page-subtitle">{{ 'Update policy details' if policy else 'Register a new insurance policy for a
+            vehicle' }}</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:640px;">
+    <form method="post" action="{{ '/insurance/' + policy.id + '/edit' if policy else '/insurance/new' }}">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-shield-halved" style="margin-right:8px;color:var(--success)"></i>Policy Details
+        </h3>
+
+        <div class="form-group">
+            <label class="form-label">Vehicle *</label>
+            <select name="vehicle_id" class="form-select" required>
+                <option value="">Select vehicle…</option>
+                {% for v in vehicles %}
+                <option value="{{ v.id }}" {% if policy and policy.vehicle_id==v.id %}selected {% elif
+                    selected_vehicle==v.id %}selected{% endif %}>
+                    {{ v.license_plate }} — {{ v.make }} {{ v.model }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Policy Number *</label>
+                <input type="text" name="policy_number" class="form-input mono" placeholder="e.g. INS-2024-001"
+                    value="{{ policy.policy_number if policy else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Insurer *</label>
+                <input type="text" name="insurer" class="form-input" placeholder="e.g. SafeDrive Insurance"
+                    value="{{ policy.insurer if policy else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Coverage Type</label>
+            <input type="text" name="coverage_type" class="form-input"
+                placeholder="e.g. Comprehensive, Third Party, Liability"
+                value="{{ policy.coverage_type or '' if policy else '' }}">
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Start Date *</label>
+                <input type="date" name="start_date" class="form-input"
+                    value="{{ policy.start_date.isoformat() if policy and policy.start_date else today }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">End Date *</label>
+                <input type="date" name="end_date" class="form-input"
+                    value="{{ policy.end_date.isoformat() if policy and policy.end_date else '' }}" required>
+                <span class="form-hint">An alert will be auto-created if expiring within 60 days</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Annual Premium ($)</label>
+            <input type="number" name="premium" class="form-input" step="0.01" min="0" placeholder="0.00"
+                value="{{ policy.premium if policy else 0 }}">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea"
+                placeholder="Coverage details, exclusions, contact info…">{{ policy.notes or '' if policy else '' }}</textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <a href="{{ '/insurance/' + policy.id if policy else '/insurance' }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-{{ 'floppy-disk' if policy else 'plus' }}"></i>
+                {{ 'Save Changes' if policy else 'Add Policy' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

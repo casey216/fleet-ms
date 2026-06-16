@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Settings — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <span class="current"><i class="fa-solid fa-gear" style="margin-right:6px"></i>Settings</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Settings</h1>
+        <p class="page-subtitle">Manage your account and application preferences</p>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;">
+
+    <!-- Settings sidebar nav -->
+    <div class="card" style="padding:8px;">
+        <a href="/settings/profile" class="nav-item" style="display:flex;">
+            <i class="fa-solid fa-user"></i> <span>Profile</span>
+        </a>
+        {% if is_admin %}
+        <a href="/settings/users" class="nav-item" style="display:flex;">
+            <i class="fa-solid fa-users-gear"></i> <span>User Management</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Content area -->
+    <div>
+        <!-- Profile quick card -->
+        <div class="card" style="margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:20px;">
+                <div class="user-avatar" style="width:64px;height:64px;font-size:26px;">
+                    {{ user.full_name[0].upper() }}
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:20px;font-weight:700;">{{ user.full_name }}</div>
+                    <div style="color:var(--text-secondary);margin-top:2px;">{{ user.email }}</div>
+                    <div style="margin-top:8px;display:flex;gap:8px;">
+                        {% set role_colors =
+                        {'admin':'badge-error','fleet_manager':'badge-warning','driver':'badge-info','viewer':'badge-ghost'}
+                        %}
+                        <span class="badge {{ role_colors.get(user.role.value, 'badge-ghost') }}">
+                            {{ user.role.value.replace('_',' ').title() }}
+                        </span>
+                        <span class="badge badge-success">Active</span>
+                    </div>
+                </div>
+                <a href="/settings/profile" class="btn btn-primary">
+                    <i class="fa-solid fa-pen"></i> Edit Profile
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick links -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <a href="/settings/profile" style="text-decoration:none;">
+                <div class="card"
+                    style="display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color 0.15s;"
+                    onmouseover="this.style.borderColor='var(--accent)'"
+                    onmouseout="this.style.borderColor='var(--border)'">
+                    <div class="stat-icon blue"><i class="fa-solid fa-user"></i></div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Edit Profile</div>
+                        <div style="color:var(--text-secondary);font-size:12px;">Update name, email, phone</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:var(--text-muted);"></i>
+                </div>
+            </a>
+
+            <a href="/settings/profile#password" style="text-decoration:none;">
+                <div class="card"
+                    style="display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color 0.15s;"
+                    onmouseover="this.style.borderColor='var(--accent)'"
+                    onmouseout="this.style.borderColor='var(--border)'">
+                    <div class="stat-icon yellow"><i class="fa-solid fa-lock"></i></div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Change Password</div>
+                        <div style="color:var(--text-secondary);font-size:12px;">Update your login credentials</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:var(--text-muted);"></i>
+                </div>
+            </a>
+
+            {% if is_admin %}
+            <a href="/settings/users" style="text-decoration:none;">
+                <div class="card"
+                    style="display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color 0.15s;"
+                    onmouseover="this.style.borderColor='var(--accent)'"
+                    onmouseout="this.style.borderColor='var(--border)'">
+                    <div class="stat-icon green"><i class="fa-solid fa-users-gear"></i></div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">User Management</div>
+                        <div style="color:var(--text-secondary);font-size:12px;">Manage roles and access</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:var(--text-muted);"></i>
+                </div>
+            </a>
+            {% endif %}
+
+            <a href="/auth/logout" style="text-decoration:none;">
+                <div class="card"
+                    style="display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color 0.15s;"
+                    onmouseover="this.style.borderColor='var(--danger)'"
+                    onmouseout="this.style.borderColor='var(--border)'">
+                    <div class="stat-icon red"><i class="fa-solid fa-right-from-bracket"></i></div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Sign Out</div>
+                        <div style="color:var(--text-secondary);font-size:12px;">End your current session</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:var(--text-muted);"></i>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

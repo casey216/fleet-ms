@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if vehicle else 'New' }} Vehicle — FleetHQ{% endblock %}
+
+{% block breadcrumb %}
+<div class="breadcrumb">
+    <a href="/vehicles">Vehicles</a>
+    <span class="sep">/</span>
+    <span class="current">{{ 'Edit ' + vehicle.license_plate if vehicle else 'New Vehicle' }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ 'Edit Vehicle' if vehicle else 'Add New Vehicle' }}</h1>
+        <p class="page-subtitle">{{ 'Update vehicle information' if vehicle else 'Register a new vehicle in the fleet'
+            }}</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:720px;">
+    <form hx-post="{{ '/vehicles/' + vehicle.id + '/edit' if vehicle else '/vehicles/new' }}" hx-target="#form-errors"
+        hx-swap="innerHTML" hx-indicator=".submit-btn">
+
+        <h3
+            style="font-size:14px;font-weight:600;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <i class="fa-solid fa-car" style="margin-right:8px;color:var(--accent)"></i>Vehicle Details
+        </h3>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">License Plate *</label>
+                <input type="text" name="license_plate" class="form-input mono" placeholder="e.g. ABC-1234"
+                    value="{{ vehicle.license_plate if vehicle else '' }}" required style="text-transform:uppercase;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">VIN</label>
+                <input type="text" name="vin" class="form-input mono" placeholder="Vehicle Identification Number"
+                    value="{{ vehicle.vin or '' if vehicle else '' }}">
+            </div>
+        </div>
+
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label class="form-label">Make *</label>
+                <input type="text" name="make" class="form-input" placeholder="e.g. Toyota"
+                    value="{{ vehicle.make if vehicle else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Model *</label>
+                <input type="text" name="model" class="form-input" placeholder="e.g. Camry"
+                    value="{{ vehicle.model if vehicle else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Year *</label>
+                <input type="number" name="year" class="form-input" placeholder="2024" min="1980" max="2030"
+                    value="{{ vehicle.year if vehicle else '' }}" required>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Color</label>
+                <input type="text" name="color" class="form-input" placeholder="e.g. Pearl White"
+                    value="{{ vehicle.color or '' if vehicle else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Seats</label>
+                <input type="number" name="seats" class="form-input" min="1" max="60"
+                    value="{{ vehicle.seats if vehicle else 5 }}">
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Fuel Type</label>
+                <select name="fuel_type" class="form-select">
+                    {% for ft in fuel_types %}
+                    <option value="{{ ft }}" {% if vehicle and vehicle.fuel_type.value==ft %}selected{% endif %}>
+                        {{ ft.title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    {% for s in statuses %}
+                    <option value="{{ s }}" {% if vehicle and vehicle.status.value==s %}selected{% endif %}>
+                        {{ s.replace('_', ' ').title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Current Odometer (km)</label>
+                <input type="number" name="odometer" class="form-input" min="0"
+                    value="{{ vehicle.odometer if vehicle else 0 }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Assigned Driver</label>
+                <select name="driver_id" class="form-select">
+                    <option value="">— Unassigned —</option>
+                    {% for driver in drivers %}
+                    <option value="{{ driver.id }}" {% if vehicle and vehicle.driver_id==driver.id %}selected{% endif
+                        %}>
+                        {{ driver.full_name }} ({{ driver.role.value }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea"
+                placeholder="Any additional notes about this vehicle…">{{ vehicle.notes or '' if vehicle else '' }}</textarea>
+        </div>
+
+        <div id="form-errors"></div>
+        
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+            <a href="{{ '/vehicles/' + vehicle.id if vehicle else '/vehicles' }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary submit-btn">
+                <i class="fa-solid fa-{{ 'floppy-disk' if vehicle else 'plus' }} htmx-hide-on-request"></i>
+                <i class="fa-solid fa-spinner fa-spin htmx-indicator"></i>
+                <span>{{ 'Save Changes' if vehicle else 'Add Vehicle' }}</span>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
